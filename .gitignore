@@ -42,3 +42,6 @@ CricXpert/Face_Recognition_Model/yolov5
 CricXpert/Face_Recognition_Model/trained_model
 CricXpert/Face_Recognition_Model/yolov5s.pt
 CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/extracted_frames_sequences
+CricXpert/Face_Recognition_Model/trained_model
+CricXpert/Face_Recognition_Model/trained_model/face_recognition_model.pkl
+CricXpert/Face_Recognition_Model/trained_model/label_encoder.pkl
