@@ -1,0 +1,9 @@
+LANGFUSE_SECRET_KEY = "<your_secret_key>"
+LANGFUSE_PUBLIC_KEY = "<your_public_key>"
+LANGFUSE_HOST = "<your_langfuse_host>"
+OPENAI_API_KEY = "<your_openai_api_key>"
+DB_HOST = "localhost"
+DB_USER = "root"
+DB_PASSWORD = "Nadun@123"
+DB_NAME = "cricxpert"
+DB_PORT = 3306 
