@@ -1,51 +1,57 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, request, jsonify, render_template
+from inference.pipeline import predict_person, load_yolo  # Import your inference function
 import os
-from werkzeug.utils import secure_filename
-from inference.pipeline import predict_player  # Import your inference function
+import joblib
+from keras.applications.resnet50 import ResNet50
 
 # Initialize Flask app
 app = Flask(__name__)
 
-# Folder to store uploaded videos
-UPLOAD_FOLDER = 'CricXpert/cricxpert_webapp/uploads'
+# Configure upload folder
+UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Allowed file types
-ALLOWED_EXTENSIONS = {'mp4', 'mov', 'avi'}
-
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Check if file extension is allowed
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+# Load required models and encoders
+print("Loading models...")
+net, output_layers = load_yolo()
+resnet_model = ResNet50(weights='imagenet', include_top=False, pooling='avg')
+ensemble_model = joblib.load('saved_models/ResNet/ensemble_player_recognition.pkl')
+label_encoder = joblib.load('saved_models/ResNet/ensemble_label_encoder.pkl')
+face_recognition_model = joblib.load('saved_models/Face_Recognition_Model/face_recognition_model.pkl')
+face_label_encoder = joblib.load('saved_models/Face_Recognition_Model/label_encoder.pkl')
+print("Models loaded successfully.")
 
-# Home route to render upload page
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return render_template('index.html')  # Render the homepage
 
-# Upload route
-@app.route('/upload', methods=['POST'])
-def upload_file():
+@app.route('/predict', methods=['POST'])
+def predict():
     if 'file' not in request.files:
-        return "No file part", 400
-    
+        return jsonify({"error": "No file uploaded"}), 400
+
     file = request.files['file']
     if file.filename == '':
-        return "No selected file", 400
-    
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        
-        # Run inference
-        result = predict_player(filepath)
-        
-        # Return result as JSON (can be displayed on the frontend)
-        return jsonify(result)
-    else:
-        return "Invalid file type. Only MP4/MOV/AVI are allowed.", 400
+        return jsonify({"error": "No file selected"}), 400
 
-if __name__ == '__main__':
+    # Save the uploaded file
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+    file.save(file_path)
+
+    # Run inference
+    try:
+        result = predict_person(
+            video_path=file_path,
+            resnet_model=resnet_model,
+            ensemble_model=ensemble_model,
+            label_encoder=label_encoder,
+            face_recognition_model=face_recognition_model,
+            face_label_encoder=face_label_encoder,
+        )
+        return jsonify({"prediction": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
     app.run(debug=True)
