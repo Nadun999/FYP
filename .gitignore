@@ -54,3 +54,6 @@ CricXpert/venv
 CricXpert/cricxpert_webapp/yolo
 CricXpert/cricxpert_webapp/uploads
 CricXpert/cricxpert_webapp/saved_models
+CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/saved_models/GRU/temporal_model
+CricXpert/cricxpert_webapp/saved_models
+CricXpert/cricxpert_webapp/saved_models/GRU/temporal_model.h5

@@ -512,11 +512,10 @@ def contains_substring(player_name, detected_text, min_length=4):
 
 
 # Function to predict player using the entire pipeline (OCR, Face, Spatial, and Temporal models)
-def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face_recognition_model, face_label_encoder):
+def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face_recognition_model, face_label_encoder, temporal_model):
 
     # Load YOLO net
     net, output_layers = load_yolo()
-    # video_path = '/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/test_video/1.mov'
     # Load the pre-trained ResNet model
     resnet_model = ResNet50(weights='imagenet', include_top=False, pooling='avg')
     # Load trained SVC model and label encoder for the spatial model
@@ -526,9 +525,7 @@ def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face
     face_recognition_model = joblib.load('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Face_Recognition_Model/trained_model/face_recognition_model.pkl')
     face_label_encoder = joblib.load('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Face_Recognition_Model/trained_model/label_encoder.pkl')
     # Load the GRU-based temporal model
-    # temporal_model = load_model('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/saved_models/GRU/temporal_model.h5')
-    # Predict
-    # predict_person(video_path, resnet_model, ensemble_model, label_encoder, face_recognition_model, face_label_encoder) # add temporal_model as a parameter here
+    temporal_model = load_model('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/saved_models/GRU/temporal_model')
 
 
     frames, detected_texts = extract_frames_for_prediction(video_path, net, output_layers)
@@ -587,7 +584,7 @@ def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face
         print("No frames were extracted from the video.")
         return "Unknown"
     
-    
+
     processed_faces = []
     face_predictions = []
     detector = MTCNN()
@@ -656,61 +653,43 @@ def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face
 
 
     # Step 4: Temporal Model (Use pose landmarks and GRU-based model for gait analysis)
-    # temporal_features = extract_temporal_features(frames)
-    # sequence_length = 15
+    temporal_features = extract_temporal_features(frames)
+    sequence_length = 15
 
-    # # if len(temporal_features) < sequence_length:
-    # #     # Pad or duplicate the temporal features to match the sequence length
-    # #     padding_needed = sequence_length - len(temporal_features)
-    # #     padded_temporal_features = np.pad(
-    # #         temporal_features,
-    # #         ((0, padding_needed), (0, 0)),  # Pad rows and columns
-    # #         mode='edge'  # Duplicate the last row
-    # #     )
-    # #     temporal_features = padded_temporal_features
+    # if len(temporal_features) < sequence_length:
+    #     # Pad or duplicate the temporal features to match the sequence length
+    #     padding_needed = sequence_length - len(temporal_features)
+    #     padded_temporal_features = np.pad(
+    #         temporal_features,
+    #         ((0, padding_needed), (0, 0)),  # Pad rows and columns
+    #         mode='edge'  # Duplicate the last row
+    #     )
+    #     temporal_features = padded_temporal_features
 
-    # # Create sequences from temporal features
-    # temporal_sequences = []
-    # for i in range(len(temporal_features) - sequence_length + 1):
-    #     temporal_sequences.append(temporal_features[i:i + sequence_length])
-    # temporal_sequences = np.array(temporal_sequences)
+    # Create sequences from temporal features
+    temporal_sequences = []
+    for i in range(len(temporal_features) - sequence_length + 1):
+        temporal_sequences.append(temporal_features[i:i + sequence_length])
+    temporal_sequences = np.array(temporal_sequences)
 
-    # # Check if temporal_sequences is empty
-    # if len(temporal_sequences) == 0:
-    #     print("Not enough temporal sequences for analysis. Returning 'Unknown'.")
-    #     return "Unknown"
+    # Check if temporal_sequences is empty
+    if len(temporal_sequences) == 0:
+        print("Not enough temporal sequences for analysis. Returning 'Unknown'.")
+        return "Unknown"
 
-    # # Predict using the temporal model
-    # temporal_predictions = temporal_model.predict(temporal_sequences)
+    # Predict using the temporal model
+    temporal_predictions = temporal_model.predict(temporal_sequences)
 
-    # # Aggregate predictions to find the most common player
-    # predicted_classes = np.argmax(temporal_predictions, axis=1)
-    # class_counts = np.bincount(predicted_classes)
+    # Aggregate predictions to find the most common player
+    predicted_classes = np.argmax(temporal_predictions, axis=1)
+    class_counts = np.bincount(predicted_classes)
 
-    # # If no clear prediction can be made, return 'Unknown'
-    # if len(class_counts) == 0 or class_counts.max() == 0:
-    #     print("No clear player prediction from temporal model. Returning 'Unknown'.")
-    #     return "Unknown"
+    # If no clear prediction can be made, return 'Unknown'
+    if len(class_counts) == 0 or class_counts.max() == 0:
+        print("No clear player prediction from temporal model. Returning 'Unknown'.")
+        return "Unknown"
 
-    # predicted_player = np.argmax(class_counts)
-    # most_common_temporal_prediction = label_encoder.inverse_transform([predicted_player])[0]
-    # print(f"\nPredicted player based on temporal model: {most_common_temporal_prediction}")
-    # return most_common_temporal_prediction
-
-
-# Example usage
-# Load YOLO net
-net, output_layers = load_yolo()
-# video_path = '/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/test_video/1.mov'
-# Load the pre-trained ResNet model
-resnet_model = ResNet50(weights='imagenet', include_top=False, pooling='avg')
-# Load trained SVC model and label encoder for the spatial model
-ensemble_model = joblib.load('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/saved_models/ResNet/ResNet_SVM_KNN/ensemble_player_recognition.pkl')
-label_encoder = joblib.load('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/saved_models/ResNet/ResNet_SVM_KNN/ensemble_label_encoder.pkl')
-# Load face recognition model and label encoder
-face_recognition_model = joblib.load('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Face_Recognition_Model/trained_model/face_recognition_model.pkl')
-face_label_encoder = joblib.load('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Face_Recognition_Model/trained_model/label_encoder.pkl')
-# Load the GRU-based temporal model
-# temporal_model = load_model('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/saved_models/GRU/temporal_model.h5')
-# Predict
-# predict_person(video_path, resnet_model, ensemble_model, label_encoder, face_recognition_model, face_label_encoder) # add temporal_model as a parameter here
+    predicted_player = np.argmax(class_counts)
+    most_common_temporal_prediction = label_encoder.inverse_transform([predicted_player])[0]
+    print(f"\nPredicted player based on temporal model: {most_common_temporal_prediction}")
+    return most_common_temporal_prediction

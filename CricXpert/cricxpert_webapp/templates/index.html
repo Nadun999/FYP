@@ -5,16 +5,94 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CricXpert - Player Recognition</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body class="bg-light">
     <div class="container mt-5">
         <h1 class="text-center mb-4">CricXpert Player Recognition</h1>
-        <form action="/predict" method="post" enctype="multipart/form-data" class="text-center">
+
+        <!-- File Upload Form -->
+        <form id="uploadForm" class="text-center">
             <div class="mb-3">
-                <input type="file" name="file" class="form-control" accept="video/mp4, video/mov, video/avi">
+                <input type="file" name="file" id="fileInput" class="form-control" accept="video/mp4, video/mov, video/avi">
             </div>
             <button type="submit" class="btn btn-primary">Upload & Predict</button>
         </form>
+
+        <!-- Prediction Output -->
+        <div id="predictionResult" class="mt-4 text-center"></div>
+
+        <!-- Question Input for Stat Generation -->
+        <h2 class="text-center mt-5">Generate Stats</h2>
+        <form id="queryForm" class="text-center">
+            <div class="mb-3">
+                <input type="text" id="queryInput" class="form-control" placeholder="Enter your question">
+            </div>
+            <button type="submit" class="btn btn-success">Generate Stat</button>
+        </form>
+
+        <!-- Stat Result Output -->
+        <div id="statResult" class="mt-4 text-center"></div>
     </div>
+
+    <script>
+        $(document).ready(function() {
+            // Handle File Upload & Prediction
+            $("#uploadForm").submit(function(e) {
+                e.preventDefault();
+                let formData = new FormData();
+                formData.append("file", $("#fileInput")[0].files[0]);
+
+                $("#predictionResult").html("<p class='text-info'>Processing...</p>");
+
+                $.ajax({
+                    url: "/predict",
+                    type: "POST",
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.error) {
+                            $("#predictionResult").html(`<p class='text-danger'>Error: ${response.error}</p>`);
+                        } else {
+                            $("#predictionResult").html(`<p class='text-success'>Predicted Player: <strong>${response.prediction}</strong></p>`);
+                        }
+                    },
+                    error: function() {
+                        $("#predictionResult").html("<p class='text-danger'>Failed to get prediction.</p>");
+                    }
+                });
+            });
+
+            // Handle SQL Query Generation
+            $("#queryForm").submit(function(e) {
+                e.preventDefault();
+                let query = $("#queryInput").val().trim();
+                if (query === "") {
+                    $("#statResult").html("<p class='text-warning'>Please enter a question.</p>");
+                    return;
+                }
+
+                $("#statResult").html("<p class='text-info'>Generating...</p>");
+
+                $.ajax({
+                    url: "/generate_stat",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ question: query }),
+                    success: function(response) {
+                        if (response.error) {
+                            $("#statResult").html(`<p class='text-danger'>Error: ${response.error}</p>`);
+                        } else {
+                            $("#statResult").html(`<p class='text-success'>${response.stat_result}</p>`);
+                        }
+                    },
+                    error: function() {
+                        $("#statResult").html("<p class='text-danger'>Failed to generate stat.</p>");
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
