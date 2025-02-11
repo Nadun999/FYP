@@ -168,3 +168,102 @@ def generate_sql_query(user_input, llm):
 #     llm = ChatOpenAI(model="gpt-4o", openai_api_key="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")
 #     result = generate_sql_query(user_question, llm)
 #     print("Query Result:", result)
+
+
+player_stats = {
+    "Virat_Kohli": {
+        "Span": "2010-2024",
+        "Mat": 125,
+        "Runs": 4188,
+        "HS": "122*",
+        "Bat Avg": 48.69,
+        "SR": 137.04,
+        "100s": 1,
+        "50s": 38,
+        "Wkts": 4,
+        "BBI": "1/13",
+        "Bowl Avg": 51.00,
+        "5w": 0,
+        "Ct": 54
+    },
+    "Arshdeep_Singh": {
+        "Span": "2022-2025",
+        "Mat": 63,
+        "Runs": 71,
+        "HS": 12,
+        "Bat Avg": 8.87,
+        "SR": 116.39,
+        "100s": 0,
+        "50s": 0,
+        "Wkts": 99,
+        "Econ": 8.29,
+        "BBI": "4/9",
+        "Bowl Avg": 18.30,
+        "5w": 0,
+        "Ct": 16
+    },
+    "Axar_Patel": {
+        "Span": "2015-2025",
+        "Mat": 66,
+        "Runs": 498,
+        "HS": 65,
+        "Bat Avg": 19.92,
+        "SR": 139.32,
+        "100s": 0,
+        "50s": 1,
+        "Wkts": 71,
+        "Econ": 7.30,
+        "BBI": "3/9",
+        "Bowl Avg": 22.12,
+        "5w": 0,
+        "Ct": 25
+    },
+    "Jasprit_Bumrah": {
+        "Span": "2016-2024",
+        "Mat": 70,
+        "Runs": 8,
+        "HS": 7,
+        "Bat Avg": 2.66,
+        "SR": 57.14,
+        "100s": 0,
+        "50s": 0,
+        "Wkts": 89,
+        "Econ": 6.27,
+        "BBI": "3/7",
+        "Bowl Avg": 17.74,
+        "5w": 0,
+        "Ct": 9
+    },
+    "Kuldeep_Yadav": {
+        "Span": "2017-2024",
+        "Mat": 40,
+        "Runs": 46,
+        "HS": "23*",
+        "Bat Avg": 11.50,
+        "SR": 77.96,
+        "100s": 0,
+        "50s": 0,
+        "Wkts": 69,
+        "Econ": 6.77,
+        "BBI": "5/17",
+        "Bowl Avg": 14.07,
+        "5w": 2,
+        "Ct": 12
+    },
+    "Ravindra_Jadeja": {
+        "Span": "2009-2024",
+        "Mat": 74,
+        "Runs": 515,
+        "HS": "46*",
+        "Bat Avg": 21.45,
+        "SR": 127.16,
+        "100s": 0,
+        "50s": 0,
+        "Wkts": 54,
+        "Econ": 7.13,
+        "BBI": "3/15",
+        "Bowl Avg": 29.85,
+        "5w": 0,
+        "Ct": 28
+    }
+}

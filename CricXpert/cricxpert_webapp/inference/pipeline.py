@@ -1,10 +1,3 @@
-# def predict_player(video_path):
-#     # Placeholder logic for inference
-#     # Replace this with your actual pipeline logic
-#     player_name = "Ravindra_Jadeja"  # Example player
-#     confidence = 0.95  # Example confidence score
-#     return {"player": player_name, "confidence": confidence}
-
 import os
 import cv2
 import numpy as np
@@ -498,6 +491,38 @@ def extract_frames_for_prediction(video_path, net, output_layers, num_frames=10)
     cap.release()
     return frames, detected_texts
 
+def extract_image_for_prediction(image_path, net, output_layers):
+    frame = cv2.imread(image_path)
+    frames = []
+    detected_texts = []
+
+    # Apply YOLO detection to the image
+    boxes, confidences = yolo_detect(net, frame, output_layers)
+    if boxes:  # Check if there is at least one detection
+        largest_box = boxes[0]  # The largest box returned by yolo_detect
+        x, y, w, h = largest_box  # Unpack the largest box
+        cropped_frame = frame[max(0, y):max(0, y + h), max(0, x):max(0, x + w)]
+        resized_frame = cv2.resize(cropped_frame, (224, 224))  # Resize frame
+
+        # Apply CLAHE for better contrast
+        lab = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        l = clahe.apply(l)
+        processed_img = cv2.merge([l, a, b])
+        processed_img = cv2.cvtColor(processed_img, cv2.COLOR_LAB2BGR)
+
+        frames.append(processed_img)
+        detected_text = process_frame_for_OCR_text_detection(cropped_frame)
+        detected_texts.append(clean_detected_text(detected_text))  # Clean and append OCR text
+    else:
+        # Fallback for images without valid detections
+        resized_frame = cv2.resize(frame, (224, 224))  # Resize original frame
+        frames.append(resized_frame)  # Include the resized frame
+        print("No valid detections in the image.")
+
+    return frames, detected_texts
+
 def contains_substring(player_name, detected_text, min_length=4):
     player_name = player_name.upper()  # Ensure case-insensitive matching
     detected_text = detected_text.upper()
@@ -512,7 +537,7 @@ def contains_substring(player_name, detected_text, min_length=4):
 
 
 # Function to predict player using the entire pipeline (OCR, Face, Spatial, and Temporal models)
-def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face_recognition_model, face_label_encoder, temporal_model):
+def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face_recognition_model, face_label_encoder, temporal_model, is_video=True):
 
     # Load YOLO net
     net, output_layers = load_yolo()
@@ -528,7 +553,11 @@ def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face
     temporal_model = load_model('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/saved_models/GRU/temporal_model')
 
 
-    frames, detected_texts = extract_frames_for_prediction(video_path, net, output_layers)
+    if is_video:
+        frames, detected_texts = extract_frames_for_prediction(video_path, net, output_layers)
+    else:
+        frames, detected_texts = extract_image_for_prediction(video_path, net, output_layers)
+
     if not frames:
         print("No frames to analyze or no valid detections.")
         return

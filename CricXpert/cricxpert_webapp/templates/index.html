@@ -6,44 +6,227 @@
     <title>CricXpert - Player Recognition</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'SF Pro';
+            src: url("{{ url_for('static', filename='Fonts/SF-Pro-Display-Regular.otf') }}") format('opentype');
+            font-weight: 400;
+        }
+        @font-face {
+            font-family: 'SF Pro';
+            src: url("{{ url_for('static', filename='Fonts/SF-Pro-Display-Bold.otf') }}") format('opentype');
+            font-weight: 600;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        body {
+            background: url("{{ url_for('static', filename='Images/background.jpeg') }}") no-repeat center center fixed;
+            background-size: cover;
+            color: #1d1d1f;
+        }
+        .container {
+            margin-top: 40px;
+            max-width: 800px;
+        }
+        .navbar {
+            background-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 10px 20px;
+            z-index: 1000; /* Ensure navbar is on top */
+            font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        .form-section {
+            background-color: rgba(246, 224, 224, 0.8); /* Adjusted for transparency */
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        .result-container {
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .result-section {
+            padding: 1px 20px;
+            border-radius: 15px;
+            background-color: #333; /* Dark background color */
+            color: #fff; /* Light text color */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: none; /* Initially hidden */
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .result-section.show {
+            display: flex;
+            opacity: 1;
+        }
+        .loader {
+            display: none;
+            margin: 20px auto;
+            border: 8px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 8px solid #0071e3;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .btn-primary {
+            background-color: #0071e3;
+            border-color: #0071e3;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background-color: #005bb5;
+            border-color: #005bb5;
+        }
+        .btn-success {
+            background-color: #34c759;
+            border-color: #34c759;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        .btn-success:hover {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        .btn-info {
+            background-color: #17a2b8;
+            border-color: #17a2b8;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        .btn-info:hover {
+            background-color: #138496;
+            border-color: #138496;
+        }
+        .text-danger {
+            color: #ff3b30 !important;
+        }
+        .text-warning {
+            color: #ffcc00 !important;
+        }
+        .text-success {
+            color: #34c759 !important;
+        }
+        h1, h2, h3, h4, h5, h6, p, a, span, div, label, input, button {
+            font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #ccb8b8; /* Dark background color */
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        table, th, td {
+            border: 1px solid #555; /* Darker border color */
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #0071e3;
+            color: #2f7adb;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #554949; /* Slightly lighter dark color */
+        }
+        tr:hover {
+            background-color: #a48686; /* Highlight color on hover */
+        }
+    </style>
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">CricXpert Player Recognition</h1>
+<body>
+    <nav class="navbar">
+        <a class="navbar-brand" href="#">CricXpert</a>
+    </nav>
+    <div class="container">
+        <div class="form-section">
+            <h2 class="text-center">Player Recognition</h2>
+            <!-- File Upload Form -->
+            <form id="uploadForm">
+                <div class="mb-3">
+                    <label for="fileInput" class="form-label">Upload Video</label>
+                    <input type="file" name="file" id="fileInput" class="form-control" accept="video/mp4, video/mov, video/avi">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Upload & Predict</button>
+            </form>
 
-        <!-- File Upload Form -->
-        <form id="uploadForm" class="text-center">
-            <div class="mb-3">
-                <input type="file" name="file" id="fileInput" class="form-control" accept="video/mp4, video/mov, video/avi">
-            </div>
-            <button type="submit" class="btn btn-primary">Upload & Predict</button>
-        </form>
+            <!-- Loader -->
+            <div class="loader" id="uploadLoader"></div>
+        </div>
 
         <!-- Prediction Output -->
-        <div id="predictionResult" class="mt-4 text-center"></div>
+        <div class="result-container">
+            <div id="predictionResult" class="result-section"></div>
+            <button id="displayStatsBtn" class="btn btn-info mt-3" style="display: none;">Display Basic Stat</button>
+        </div>
 
-        <!-- Question Input for Stat Generation -->
-        <h2 class="text-center mt-5">Generate Stats</h2>
-        <form id="queryForm" class="text-center">
-            <div class="mb-3">
-                <input type="text" id="queryInput" class="form-control" placeholder="Enter your question">
-            </div>
-            <button type="submit" class="btn btn-success">Generate Stat</button>
-        </form>
+        <!-- Basic Stat Result Output -->
+        <div class="result-container">
+            <div id="basicStatResult" class="result-section"></div>
+        </div>
 
-        <!-- Stat Result Output -->
-        <div id="statResult" class="mt-4 text-center"></div>
+        <div class="form-section">
+            <h2 class="text-center">Stat Generation</h2>
+            <form id="queryForm">
+                <div class="mb-3">
+                    <label for="queryInput" class="form-label">Enter your question</label>
+                    <input type="text" id="queryInput" class="form-control" placeholder="Enter your question">
+                </div>
+                <button type="submit" class="btn btn-success w-100">Generate Stat</button>
+            </form>
+
+            <!-- Loader -->
+            <div class="loader" id="queryLoader"></div>
+        </div>
+
+        <!-- Stat Generation Result Output -->
+        <div class="result-container">
+            <div id="statGenResult" class="result-section"></div>
+        </div>
     </div>
 
     <script>
         $(document).ready(function() {
+            let predictedPlayer = '';
+
             // Handle File Upload & Prediction
             $("#uploadForm").submit(function(e) {
                 e.preventDefault();
                 let formData = new FormData();
                 formData.append("file", $("#fileInput")[0].files[0]);
 
-                $("#predictionResult").html("<p class='text-info'>Processing...</p>");
+                $("#uploadLoader").show();
+                $("#predictionResult").removeClass('show').html("");
+                $("#displayStatsBtn").hide();
 
                 $.ajax({
                     url: "/predict",
@@ -52,16 +235,86 @@
                     processData: false,
                     contentType: false,
                     success: function(response) {
+                        $("#uploadLoader").hide();
                         if (response.error) {
                             $("#predictionResult").html(`<p class='text-danger'>Error: ${response.error}</p>`);
                         } else {
-                            $("#predictionResult").html(`<p class='text-success'>Predicted Player: <strong>${response.prediction}</strong></p>`);
+                            predictedPlayer = response.prediction;
+                            $("#predictionResult").html(`<p class='text-success'>Predicted Player: <strong>${predictedPlayer}</strong></p>`);
+                            $("#displayStatsBtn").show();
                         }
+                        $("#predictionResult").addClass('show');
                     },
                     error: function() {
-                        $("#predictionResult").html("<p class='text-danger'>Failed to get prediction.</p>");
+                        $("#uploadLoader").hide();
+                        $("#predictionResult").html("<p class='text-danger'>Error: No upload detected.</p>").addClass('show');
                     }
                 });
+            });
+
+            // Handle Display Basic Stat
+            $("#displayStatsBtn").click(function() {
+                if (predictedPlayer) {
+                    $.ajax({
+                        url: "/get_player_stats",
+                        type: "POST",
+                        contentType: "application/json",
+                        data: JSON.stringify({ player: predictedPlayer }),
+                        success: function(response) {
+                            if (response.error) {
+                                $("#basicStatResult").html(`<p class='text-danger'>Error: ${response.error}</p>`);
+                            } else {
+                                let stats = response.stats;
+                                let statsHtml = `
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Span</th>
+                                                <th>Mat</th>
+                                                <th>Runs</th>
+                                                <th>HS</th>
+                                                <th>Bat Avg</th>
+                                                <th>SR</th>
+                                                <th>100s</th>
+                                                <th>50s</th>
+                                                <th>Wkts</th>
+                                                <th>Econ</th>
+                                                <th>BBI</th>
+                                                <th>Bowl Avg</th>
+                                                <th>5w</th>
+                                                <th>Ct</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>${stats.Span}</td>
+                                                <td>${stats.Mat}</td>
+                                                <td>${stats.Runs}</td>
+                                                <td>${stats.HS}</td>
+                                                <td>${stats["Bat Avg"]}</td>
+                                                <td>${stats.SR}</td>
+                                                <td>${stats["100s"]}</td>
+                                                <td>${stats["50s"]}</td>
+                                                <td>${stats.Wkts}</td>
+                                                <td>${stats.Econ}</td>
+                                                <td>${stats.BBI}</td>
+                                                <td>${stats["Bowl Avg"]}</td>
+                                                <td>${stats["5w"]}</td>
+                                                <td>${stats.Ct}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                `;
+                                $("#basicStatResult").html(statsHtml).addClass('show');
+                            }
+                        },
+                        error: function() {
+                            $("#basicStatResult").html("<p class='text-danger'>Failed to retrieve stats.</p>").addClass('show');
+                        }
+                    });
+                } else {
+                    $("#basicStatResult").html("<p class='text-warning'>No player predicted yet.</p>").addClass('show');
+                }
             });
 
             // Handle SQL Query Generation
@@ -69,11 +322,12 @@
                 e.preventDefault();
                 let query = $("#queryInput").val().trim();
                 if (query === "") {
-                    $("#statResult").html("<p class='text-warning'>Please enter a question.</p>");
+                    $("#statGenResult").html("<p class='text-warning'>Please enter a question.</p>").addClass('show');
                     return;
                 }
 
-                $("#statResult").html("<p class='text-info'>Generating...</p>");
+                $("#queryLoader").show();
+                $("#statGenResult").removeClass('show').html("");
 
                 $.ajax({
                     url: "/generate_stat",
@@ -81,14 +335,16 @@
                     contentType: "application/json",
                     data: JSON.stringify({ question: query }),
                     success: function(response) {
+                        $("#queryLoader").hide();
                         if (response.error) {
-                            $("#statResult").html(`<p class='text-danger'>Error: ${response.error}</p>`);
+                            $("#statGenResult").html(`<p class='text-danger'>Error: ${response.error}</p>`);
                         } else {
-                            $("#statResult").html(`<p class='text-success'>${response.stat_result}</p>`);
+                            $("#statGenResult").html(`<p class='text-success'>${response.stat_result}</p>`).addClass('show');
                         }
                     },
                     error: function() {
-                        $("#statResult").html("<p class='text-danger'>Failed to generate stat.</p>");
+                        $("#queryLoader").hide();
+                        $("#statGenResult").html("<p class='text-danger'>Failed to generate stat.</p>").addClass('show');
                     }
                 });
             });

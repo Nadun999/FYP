@@ -1,13 +1,19 @@
 from flask import Flask, request, jsonify, render_template
 from inference.pipeline import predict_person, load_yolo
-from inference.stat_generation import generate_sql_query
+from inference.stat_generation import generate_sql_query, player_stats
 import os
 import joblib
+import logging
+
 from keras.applications.resnet50 import ResNet50
 from tensorflow.keras.models import load_model
 from langchain_openai import ChatOpenAI
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
 
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -32,28 +38,46 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     if 'file' not in request.files:
-        return jsonify({"error": "No file uploaded"})
+        return jsonify({"error": "No file part in the request"}), 400
 
     file = request.files['file']
     if file.filename == '':
-        return jsonify({"error": "No file selected"})
+        return jsonify({"error": "No file selected for uploading"}), 400
 
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-    file.save(file_path)
+    if file:
+        filename = secure_filename(file.filename)
+        file_path = os.path.join('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/cricxpert_webapp/uploads', filename)
+        file.save(file_path)
 
-    try:
-        result = predict_person(
-            video_path=file_path,
-            resnet_model=resnet_model,
-            ensemble_model=ensemble_model,
-            label_encoder=label_encoder,
-            face_recognition_model=face_recognition_model,
-            face_label_encoder=face_label_encoder,
-            temporal_model=temporal_model
-        )
-        return jsonify({"prediction": result})
-    except Exception as e:
-        return jsonify({"error": str(e)})
+        # Determine if the file is a video or an image
+        is_video = filename.lower().endswith(('.mp4', '.mov', '.avi'))
+        logging.debug(f"File uploaded: {filename}, is_video: {is_video}")
+
+        try:
+            result = predict_person(
+                video_path=file_path,
+                resnet_model=resnet_model,
+                ensemble_model=ensemble_model,
+                label_encoder=label_encoder,
+                face_recognition_model=face_recognition_model,
+                face_label_encoder=face_label_encoder,
+                temporal_model=temporal_model,
+                is_video=is_video
+            )
+            logging.debug(f"Prediction result: {result}")
+            return jsonify({"prediction": result})
+        except Exception as e:
+            logging.error(f"Error during prediction: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+    
+@app.route('/get_player_stats', methods=['POST'])
+def get_player_stats():
+    data = request.get_json()
+    player = data.get('player')
+    if player in player_stats:
+        return jsonify({"stats": player_stats[player]})
+    else:
+        return jsonify({"error": "Player not found"}), 404
 
 @app.route('/generate_stat', methods=['POST'])
 def generate_stat():
