@@ -9,7 +9,7 @@ import inference.settings as settings
 from pydantic import BaseModel, Field
 from textwrap import dedent
 
-# Configuration for handling callbacks and LLM setup
+# configuration for handling callbacks and LLM setup
 langfuse_handler = CallbackHandler(
     secret_key="sk-lf-1b6737ff-b2f5-4468-a0ff-31a2f8c89592",
     public_key="pk-lf-5b8579d9-c0a0-4126-8fe1-c748668b8a77",
@@ -42,7 +42,7 @@ def generate_sql_query(user_input, llm):
     """
     This function generates a SQL query based on the user's input using GPT-4 and the relationships in the cricket database.
     """
-    # Define the parser for SQL output
+    # define the parser for SQL output
     parser = PydanticOutputParser(pydantic_object=SQLQueryModel)
     format_instructions = parser.get_format_instructions()
 
@@ -119,28 +119,27 @@ def generate_sql_query(user_input, llm):
         input_variables=["user_input", "format_instructions"],
     )
 
-    # Format the prompt with user input and format instructions
+    # format the prompt with user input and format instructions
     _input = prompt.format_prompt(
         user_input=user_input, format_instructions=format_instructions
     )
     
-    # Invoke the LLM to generate the SQL query
+    # invoke the LLM to generate the SQL query
     output = llm_invoke(llm, _input)
     
-    # Print the raw output to debug
     print("Raw Output from LLM:", output.content)
 
-    # Parse the output to extract the SQL query
+    # parse the output to extract the SQL query
     parsed = parse_response(output.content, parser)
     if parsed is None:
         raise ValueError("Failed to parse the response. Please check the output.")
 
     sql_query = parsed.sql_query
 
-    # Initialize result to None to ensure it is defined
+    # initialize result to None to ensure it is defined
     result = None
 
-    # Execute the SQL query against MySQL database
+    # execute the SQL query against MySQL database
     try:
         connection = mysql.connector.connect(
             host=settings.DB_HOST,
@@ -181,6 +180,7 @@ player_stats = {
         "100s": 1,
         "50s": 38,
         "Wkts": 4,
+        "Econ": 8.30,
         "BBI": "1/13",
         "Bowl Avg": 51.00,
         "5w": 0,

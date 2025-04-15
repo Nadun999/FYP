@@ -46,7 +46,6 @@ def load_yolo():
     net = cv2.dnn.readNet(path_to_weights, path_to_cfg)
     layers_names = net.getLayerNames()
     
-    # Handling different versions of OpenCV which may return different formats
     try:
         output_layers = [layers_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
     except Exception:
@@ -67,7 +66,7 @@ def yolo_detect(net, image, output_layers, confidence_threshold=0.3):
             scores = detection[5:]
             class_id = np.argmax(scores)
             confidence = scores[class_id]
-            if confidence > confidence_threshold and class_id == 0:  # Person class
+            if confidence > confidence_threshold and class_id == 0:  # player class
                 center_x = int(detection[0] * width)
                 center_y = int(detection[1] * height)
                 w = int(detection[2] * width)
@@ -79,12 +78,12 @@ def yolo_detect(net, image, output_layers, confidence_threshold=0.3):
                     boxes.append([x, y, w, h])
                     confidences.append(float(confidence))
 
-    # Select the largest vertical box based on area if any boxes were detected
+    # select the largest vertical box based on area if any boxes were detected
     if boxes:
         largest_box = max(boxes, key=lambda b: b[2] * b[3])  # b[2]*b[3] is the area of the box (w*h)
         largest_confidence = confidences[boxes.index(largest_box)]
         return [largest_box], [largest_confidence]
-    return [], []  # Return empty lists if no boxes detected
+    return [], []  # return empty lists if no boxes detected
 
 
 def extract_features(images, model):
@@ -109,44 +108,44 @@ def extract_features(images, model):
 
 def process_frame_for_OCR_text_detection(image):
 
-    # Convert image to RGB for consistent display if originally in BGR
+    # convert image to RGB for consistent display if originally in BGR
     if image.shape[2] == 3:  # assuming the image has 3 channels
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-    # Original dimensions
+    # original dimensions
     (H, W) = image.shape[:2]
 
-    # Set the new width and height to nearest multiple of 32 for EAST model
+    # set the new width and height to nearest multiple of 32 for EAST model
     newW = int(W / 32) * 32
     newH = int(H / 32) * 32
 
-    # Resize the image to fit model requirements
+    # resize the image to fit model requirements
     image = cv2.resize(image, (newW, newH))
 
-    # Load the pre-trained EAST text detector model
+    # load the pre-trained EAST text detector model
     model_path = '/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/saved_models/ResNet/frozen_east_text_detection.pb'
     net = cv2.dnn.readNet(model_path)
 
-    # Prepare the image for the model
+    # prepare the image for the model
     blob = cv2.dnn.blobFromImage(image, 1.0, (newW, newH),
                                  (123.68, 116.78, 103.94), swapRB=True, crop=False)
     net.setInput(blob)
 
-    # Layer names for the output layers
+    # layer names for the output layers
     layerNames = [
         "feature_fusion/Conv_7/Sigmoid",
         "feature_fusion/concat_3"
     ]
 
-    # Forward pass of the model to get output
+    # forward pass of the model to get output
     (scores, geometry) = net.forward(layerNames)
 
-    # Decode the predictions
+    # decode the predictions
     (numRows, numCols) = scores.shape[2:4]
     rects = []
     confidences = []
 
-    # Loop over the number of rows
+    # loop over the number of rows
     for y in range(0, numRows):
         scoresData = scores[0, 0, y]
         xData0 = geometry[0, 0, y]
@@ -155,7 +154,7 @@ def process_frame_for_OCR_text_detection(image):
         xData3 = geometry[0, 3, y]
         anglesData = geometry[0, 4, y]
 
-        # Loop over the number of columns
+        # loop over the number of columns
         for x in range(0, numCols):
             if scoresData[x] < 0.5:
                 continue
@@ -177,7 +176,7 @@ def process_frame_for_OCR_text_detection(image):
             rects.append((startX, startY, endX, endY))
             confidences.append(scoresData[x])
 
-    # Apply non-maxima suppression to avoid overlaps
+    # apply non-maxima suppression to avoid overlaps
     indices = cv2.dnn.NMSBoxes(rects, confidences, 0.5, 0.4)
 
     # # Plot the figures side by side
@@ -200,7 +199,7 @@ def process_frame_for_OCR_text_detection(image):
     # plt.imshow(image)
 
     if len(indices) > 0:
-        indices = indices.flatten()  # Ensuring flattening is possible
+        indices = indices.flatten()  # ensuring flattening is possible
 
         # # Plotting and processing detections
         # plt.figure(figsize=(10, 6))
@@ -248,18 +247,18 @@ def process_frame_for_OCR_text_detection(image):
     # Initialize 'text' to an empty string
     text = ''
 
-    # Proceed with text recognition on the cropped image
+    # proceed with text recognition on the cropped image
     if cropped_img is not None:
-        # Convert cropped image from RGB to BGR for OpenCV operations
+        # convert cropped image from RGB to BGR for OpenCV operations
         cropped_img_bgr = cv2.cvtColor(cropped_img, cv2.COLOR_RGB2BGR)
         
-        # Convert to grayscale
+        # convert to grayscale
         gray = cv2.cvtColor(cropped_img_bgr, cv2.COLOR_BGR2GRAY)
 
         # # Apply thresholding
         # _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)
 
-        # Use median blur to remove noise
+        # use median blur to remove noise
         blur = cv2.medianBlur(gray, 5)
 
         # # Resize for better accuracy
@@ -292,28 +291,28 @@ def process_frame_for_OCR_text_detection(image):
     return text
 
 
-# Load the FaceNet model for embeddings
+# load the FaceNet model for embeddings
 embedder = FaceNet()
 
-# Initialize MediaPipe Pose Estimation
+# initialize MediaPipe Pose Estimation
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 
-# Function to get embeddings using FaceNet
+# function to get embeddings using FaceNet
 def get_embedding(face_img):
     face_img = face_img.astype('float32')
     face_img = np.expand_dims(face_img, axis=0)
     return embedder.embeddings(face_img)[0]
 
-# Function to extract pose landmarks from the cropped image
+# function to extract pose landmarks from the cropped image
 def extract_pose_landmarks(cropped_img):
-    # Convert the image to RGB
+    # convert the image to RGB
     image_rgb = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2RGB)
     
-    # Perform pose detection
+    # perform pose detection
     results = pose.process(image_rgb)
 
-    # If landmarks are detected
+    # if landmarks are detected
     if results.pose_landmarks:
         landmarks = []
         for landmark in results.pose_landmarks.landmark:
@@ -321,109 +320,109 @@ def extract_pose_landmarks(cropped_img):
         return np.array(landmarks).flatten()
     return None
 
-# Calculate step length between left and right ankles
+# calculate step length between left and right ankles
 def calculate_step_length(pose_sequence):
     left_ankle_x, left_ankle_y = pose_sequence[27*3], pose_sequence[27*3 + 1]  # left ankle
     right_ankle_x, right_ankle_y = pose_sequence[28*3], pose_sequence[28*3 + 1]  # right ankle
     step_length = np.linalg.norm(np.array([right_ankle_x, right_ankle_y]) - np.array([left_ankle_x, left_ankle_y]))
     return step_length
 
-# Calculate joint velocities between two consecutive frames
+# calculate joint velocities between two consecutive frames
 def calculate_velocity(pose_sequence_t, pose_sequence_t1, joint_index):
     joint_t = np.array([pose_sequence_t[joint_index*3], pose_sequence_t[joint_index*3 + 1]])
     joint_t1 = np.array([pose_sequence_t1[joint_index*3], pose_sequence_t1[joint_index*3 + 1]])
     velocity = np.linalg.norm(joint_t1 - joint_t)
     return velocity
 
-# Calculate joint angles (hip-knee-ankle)
+# calculate joint angles (hip-knee-ankle)
 def calculate_joint_angle(pose_sequence, hip_idx, knee_idx, ankle_idx):
     hip = np.array([pose_sequence[hip_idx*3], pose_sequence[hip_idx*3 + 1]])
     knee = np.array([pose_sequence[knee_idx*3], pose_sequence[knee_idx*3 + 1]])
     ankle = np.array([pose_sequence[ankle_idx*3], pose_sequence[ankle_idx*3 + 1]])
     
-    # Calculate vectors
+    # calculate vectors
     vec_hip_knee = knee - hip
     vec_knee_ankle = ankle - knee
     
-    # Calculate the cosine of the angle between the vectors
+    # calculate the cosine of the angle between the vectors
     cos_angle = np.dot(vec_hip_knee, vec_knee_ankle) / (np.linalg.norm(vec_hip_knee) * np.linalg.norm(vec_knee_ankle))
     angle = np.arccos(cos_angle)
     return np.degrees(angle)
 
-# Calculate joint accelerations between two consecutive frames (acceleration is the change in velocity)
+# calculate joint accelerations between two consecutive frames (acceleration is the change in velocity)
 def calculate_acceleration(velocity_t, velocity_t1):
     acceleration = velocity_t1 - velocity_t
     return acceleration
 
-# Calculate angular velocity (rate of change of joint angles between consecutive frames)
+# calculate angular velocity (rate of change of joint angles between consecutive frames)
 def calculate_angular_velocity(joint_angle_t, joint_angle_t1):
     angular_velocity = joint_angle_t1 - joint_angle_t
     return angular_velocity
 
-# Calculate hip displacement between two frames
+# calculate hip displacement between two frames
 def calculate_hip_displacement(pose_sequence_t, pose_sequence_t1):
     left_hip_t = np.array([pose_sequence_t[23*3], pose_sequence_t[23*3 + 1]])
     right_hip_t = np.array([pose_sequence_t[24*3], pose_sequence_t[24*3 + 1]])
     left_hip_t1 = np.array([pose_sequence_t1[23*3], pose_sequence_t1[23*3 + 1]])
     right_hip_t1 = np.array([pose_sequence_t1[24*3], pose_sequence_t1[24*3 + 1]])
     
-    # Calculate hip centers
+    # calculate hip centers
     hip_center_t = (left_hip_t + right_hip_t) / 2
     hip_center_t1 = (left_hip_t1 + right_hip_t1) / 2
     
-    # Displacement between frames
+    # displacement between frames
     hip_displacement = np.linalg.norm(hip_center_t1 - hip_center_t)
     return hip_displacement
 
 
-# Temporal feature extraction (step length, joint velocities, joint angles, etc.)
+# temporal feature extraction (step length, joint velocities, joint angles, etc.)
 def calculate_features(pose_landmarks, previous_landmarks=None, previous_velocities=None, previous_angles=None):
-    frame_features = [0] * 10  # Ten features (step length, velocity x2, joint angles x2, acceleration x2, angular velocity x2, hip displacement)
+    frame_features = [0] * 10  # 10 features (step length, velocity x2, joint angles x2, acceleration x2, angular velocity x2, hip displacement)
 
-    # Step Length
+    # step Length
     step_length = calculate_step_length(pose_landmarks)
     frame_features[0] = step_length
 
-    # Joint Velocities
+    # joint Velocities
     if previous_landmarks is not None:
         left_ankle_velocity = calculate_velocity(previous_landmarks, pose_landmarks, 27)
         right_ankle_velocity = calculate_velocity(previous_landmarks, pose_landmarks, 28)
         frame_features[1] = left_ankle_velocity
         frame_features[2] = right_ankle_velocity
 
-        # Joint Accelerations
+        # joint Accelerations
         if previous_velocities is not None:
             left_ankle_acceleration = calculate_acceleration(previous_velocities[0], left_ankle_velocity)
             right_ankle_acceleration = calculate_acceleration(previous_velocities[1], right_ankle_velocity)
             frame_features[5] = left_ankle_acceleration
             frame_features[6] = right_ankle_acceleration
 
-        # Hip Displacement (New Feature)
+        # hip Displacement
         hip_displacement = calculate_hip_displacement(previous_landmarks, pose_landmarks)
         frame_features[9] = hip_displacement
     else:
-        frame_features[1] = frame_features[2] = 0  # Velocities
-        frame_features[5] = frame_features[6] = 0  # Accelerations
-        frame_features[9] = 0  # Hip Displacement
+        frame_features[1] = frame_features[2] = 0  # velocities
+        frame_features[5] = frame_features[6] = 0  # accelerations
+        frame_features[9] = 0  # hip displacement
 
-    # Joint Angles
+    # joint angles
     left_leg_angle = calculate_joint_angle(pose_landmarks, 23, 25, 27)
     right_leg_angle = calculate_joint_angle(pose_landmarks, 24, 26, 28)
     frame_features[3] = left_leg_angle
     frame_features[4] = right_leg_angle
 
-    # Angular Velocities
+    # angular velocities
     if previous_angles is not None:
         left_leg_angular_velocity = calculate_angular_velocity(previous_angles[0], left_leg_angle)
         right_leg_angular_velocity = calculate_angular_velocity(previous_angles[1], right_leg_angle)
         frame_features[7] = left_leg_angular_velocity
         frame_features[8] = right_leg_angular_velocity
     else:
-        frame_features[7] = frame_features[8] = 0  # Angular velocities
+        frame_features[7] = frame_features[8] = 0  # angular velocities
 
     return frame_features
 
-# Function to extract temporal features from frames
+# extract temporal features from frames
 def extract_temporal_features(frames):
     temporal_features = []
     previous_landmarks = None
@@ -435,17 +434,16 @@ def extract_temporal_features(frames):
         if pose_landmarks is not None:
             frame_features = calculate_features(pose_landmarks, previous_landmarks, previous_velocities, previous_angles)
             temporal_features.append(frame_features)
-            previous_landmarks = pose_landmarks  # Store the current landmarks for the next frame
+            previous_landmarks = pose_landmarks  # store the current landmarks for the next frame
 
     return np.array(temporal_features)
 
 def clean_detected_text(text):
-    # Remove non-alphanumeric characters and extra spaces
+    # remove non-alphanumeric characters and extra spaces
     text = ''.join(char for char in text if char.isalnum() or char.isspace())
-    text = text.strip().upper()  # Convert to uppercase for case-insensitive matching
+    text = text.strip().upper()  # convert to uppercase for case-insensitive matching
 
     return text
-
 
 def extract_frames_for_prediction(video_path, net, output_layers, num_frames=10):
     cap = cv2.VideoCapture(video_path)
@@ -453,7 +451,7 @@ def extract_frames_for_prediction(video_path, net, output_layers, num_frames=10)
     interval = total_frames // num_frames if total_frames > num_frames else 1
     frame_ids = [int(interval * i) for i in range(num_frames)]
     frames = []
-    detected_texts = []  # Placeholder for detected texts from OCR
+    detected_texts = [] 
 
     frame_count = 0
     while frame_count < total_frames:
@@ -462,15 +460,15 @@ def extract_frames_for_prediction(video_path, net, output_layers, num_frames=10)
             break
 
         if frame_count in frame_ids:
-            # Apply YOLO detection to each frame
+            # apply YOLO detection to each frame
             boxes, confidences = yolo_detect(net, frame, output_layers)
-            if boxes:  # Check if there is at least one detection
-                largest_box = boxes[0]  # The largest box returned by yolo_detect
-                x, y, w, h = largest_box  # Unpack the largest box
+            if boxes:  # check if there is at least one detection
+                largest_box = boxes[0]  # the largest box returned by yolo_detect
+                x, y, w, h = largest_box  # unpack the largest box
                 cropped_frame = frame[max(0, y):max(0, y + h), max(0, x):max(0, x + w)]
-                resized_frame = cv2.resize(cropped_frame, (224, 224))  # Resize frame
+                resized_frame = cv2.resize(cropped_frame, (224, 224))  # resize frame
 
-                # Apply CLAHE for better contrast
+                # apply CLAHE for better contrast
                 lab = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2LAB)
                 l, a, b = cv2.split(lab)
                 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -480,11 +478,11 @@ def extract_frames_for_prediction(video_path, net, output_layers, num_frames=10)
 
                 frames.append(processed_img)
                 detected_text = process_frame_for_OCR_text_detection(cropped_frame)
-                detected_texts.append(clean_detected_text(detected_text))  # Clean and append OCR text
+                detected_texts.append(clean_detected_text(detected_text))  # clean and append OCR text
             else:
-                # Fallback for frames without valid detections
-                resized_frame = cv2.resize(frame, (224, 224))  # Resize original frame
-                frames.append(resized_frame)  # Include the resized frame
+                # fallback for frames without valid detections
+                resized_frame = cv2.resize(frame, (224, 224))  # resize original frame
+                frames.append(resized_frame)  # include the resized frame
                 print(f"No valid detections at frame {frame_count}.")
         frame_count += 1
 
@@ -496,15 +494,15 @@ def extract_image_for_prediction(image_path, net, output_layers):
     frames = []
     detected_texts = []
 
-    # Apply YOLO detection to the image
+    # apply YOLO detection to the image
     boxes, confidences = yolo_detect(net, frame, output_layers)
-    if boxes:  # Check if there is at least one detection
-        largest_box = boxes[0]  # The largest box returned by yolo_detect
-        x, y, w, h = largest_box  # Unpack the largest box
+    if boxes:  # check if there is at least one detection
+        largest_box = boxes[0]  #the largest box returned by yolo_detect
+        x, y, w, h = largest_box  # unpack the largest box
         cropped_frame = frame[max(0, y):max(0, y + h), max(0, x):max(0, x + w)]
-        resized_frame = cv2.resize(cropped_frame, (224, 224))  # Resize frame
+        resized_frame = cv2.resize(cropped_frame, (224, 224))  # resize frame
 
-        # Apply CLAHE for better contrast
+        # apply CLAHE for better contrast
         lab = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2LAB)
         l, a, b = cv2.split(lab)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -514,20 +512,20 @@ def extract_image_for_prediction(image_path, net, output_layers):
 
         frames.append(processed_img)
         detected_text = process_frame_for_OCR_text_detection(cropped_frame)
-        detected_texts.append(clean_detected_text(detected_text))  # Clean and append OCR text
+        detected_texts.append(clean_detected_text(detected_text))  # clean and append OCR text
     else:
-        # Fallback for images without valid detections
-        resized_frame = cv2.resize(frame, (224, 224))  # Resize original frame
-        frames.append(resized_frame)  # Include the resized frame
+        # fallback for images without valid detections
+        resized_frame = cv2.resize(frame, (224, 224))  # resize original frame
+        frames.append(resized_frame)  # include the resized frame
         print("No valid detections in the image.")
 
     return frames, detected_texts
 
 def contains_substring(player_name, detected_text, min_length=4):
-    player_name = player_name.upper()  # Ensure case-insensitive matching
+    player_name = player_name.upper()  # ensure case-insensitive matching
     detected_text = detected_text.upper()
 
-    # Sliding window approach: check all substrings of `player_name`
+    # sliding window approach: check all substrings of `player_name`
     for i in range(len(player_name) - min_length + 1):
         substring = player_name[i:i + min_length]
         if substring in detected_text:
@@ -536,20 +534,22 @@ def contains_substring(player_name, detected_text, min_length=4):
 
 
 
-# Function to predict player using the entire pipeline (OCR, Face, Spatial, and Temporal models)
+
+
+# predict player using the entire pipeline (OCR, Face, Spatial, and Temporal models)
 def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face_recognition_model, face_label_encoder, temporal_model, is_video=True):
 
-    # Load YOLO net
+    # load YOLO net
     net, output_layers = load_yolo()
-    # Load the pre-trained ResNet model
+    # load the pre-trained ResNet model
     resnet_model = ResNet50(weights='imagenet', include_top=False, pooling='avg')
-    # Load trained SVC model and label encoder for the spatial model
+    # load trained model and label encoder for the spatial model
     ensemble_model = joblib.load('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/saved_models/ResNet/ResNet_SVM_KNN/ensemble_player_recognition.pkl')
     label_encoder = joblib.load('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/saved_models/ResNet/ResNet_SVM_KNN/ensemble_label_encoder.pkl')
-    # Load face recognition model and label encoder
+    # load face recognition model and label encoder
     face_recognition_model = joblib.load('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Face_Recognition_Model/trained_model/face_recognition_model.pkl')
     face_label_encoder = joblib.load('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Face_Recognition_Model/trained_model/label_encoder.pkl')
-    # Load the GRU-based temporal model
+    # load the GRU-based temporal model
     temporal_model = load_model('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/Hybrid_Spatio_Temporal_Model_For_Gait_Analysis/saved_models/GRU/temporal_model')
 
 
@@ -562,7 +562,7 @@ def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face
         print("No frames to analyze or no valid detections.")
         return
 
-    # Initialize a list to store text-based matches
+    # initialize a list to store text-based matches
     text_matches = []
 
     # Step 1: OCR System (Try to detect jersey name/number)
@@ -572,13 +572,20 @@ def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face
         print(f"Detected text: {detected_text_upper}")
         matched_player = None
         for player, info in player_database.items():
-            if contains_substring(info['name'], detected_text_upper, min_length=4) or info['number'] in detected_text_upper:
+            name_match = contains_substring(info['name'], detected_text_upper, min_length=4)
+            number_match = info['number'] in detected_text_upper
+            if name_match and number_match:
                 matched_player = player
                 print(f"Detected text matches player: {player}")
                 text_matches.append(matched_player)
-                break  # Stop checking after finding a match
+                break  # stop checking after finding a match
+            elif name_match:
+                matched_player = player
+                print(f"Detected text matches player: {player}")
+                text_matches.append(matched_player)
+                break  # stop checking after finding a match
 
-    # Check if any text matches were found from OCR
+    # check if any text matches were found from OCR
     if text_matches:
         most_common_player = Counter(text_matches).most_common(1)[0][0]
         print(f"\nPredicted player based on text detection: {most_common_player}")
@@ -602,13 +609,13 @@ def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face
             break
 
         if frame_count in frame_ids:
-            # Append raw frames without YOLO cropping
+            # append raw frames without YOLO cropping
             frames.append(frame)
 
         frame_count += 1
     cap.release()
 
-    # Check if frames were extracted
+    # check if frames were extracted
     if not frames:
         print("No frames were extracted from the video.")
         return "Unknown"
@@ -625,27 +632,27 @@ def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face
         if results:
             for result in results:
                 x, y, w, h = result['box']
-                x, y = max(0, x), max(0, y)  # Ensure coordinates are within the image
+                x, y = max(0, x), max(0, y)  # ensure coordinates are within the image
                 face = rgb_img[y:y+h, x:x+w]
                 face = cv2.resize(face, (160, 160))
                 
-                # Generate embedding for the detected face
+                # generate embedding for the detected face
                 embedding = get_embedding(face)
                 embedding = np.expand_dims(embedding, axis=0)
 
-                # Predict the identity of the face
+                # predict the identity of the face
                 ypred = face_recognition_model.predict(embedding)
                 proba = face_recognition_model.predict_proba(embedding).max()
-                if proba > 0.5:  # Confidence threshold
+                if proba > 0.5:  # confidence threshold
                     final_name = face_label_encoder.inverse_transform(ypred)[0]
                     face_predictions.append(final_name)
-                    break  # Stop processing further faces in the frame
+                    break  # stop processing further faces in the frame
                 else:
                     face_predictions.append("Unknown")
         else:
             print(f"No face detected in frame {i}.")
 
-    # Check if any face matches were found
+    # check if any face matches were found
     if face_predictions:
         filtered_face_predictions = [pred for pred in face_predictions if pred != "Unknown"]
         if filtered_face_predictions:
@@ -670,7 +677,7 @@ def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face
         else:
             predictions.append("Unknown")
 
-    # Check if any spatial model predictions were made
+    # check if any spatial model predictions were made
     if predictions:
         filtered_predictions = [pred for pred in predictions if pred != "Unknown"]
         if filtered_predictions:
@@ -695,25 +702,25 @@ def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face
     #     )
     #     temporal_features = padded_temporal_features
 
-    # Create sequences from temporal features
+    # create sequences from temporal features
     temporal_sequences = []
     for i in range(len(temporal_features) - sequence_length + 1):
         temporal_sequences.append(temporal_features[i:i + sequence_length])
     temporal_sequences = np.array(temporal_sequences)
 
-    # Check if temporal_sequences is empty
+    # check if temporal_sequences is empty
     if len(temporal_sequences) == 0:
         print("Not enough temporal sequences for analysis. Returning 'Unknown'.")
         return "Unknown"
 
-    # Predict using the temporal model
+    # predict using the temporal model
     temporal_predictions = temporal_model.predict(temporal_sequences)
 
-    # Aggregate predictions to find the most common player
+    # aggregate predictions to find the most common player
     predicted_classes = np.argmax(temporal_predictions, axis=1)
     class_counts = np.bincount(predicted_classes)
 
-    # If no clear prediction can be made, return 'Unknown'
+    # if no clear prediction can be made, return 'Unknown'
     if len(class_counts) == 0 or class_counts.max() == 0:
         print("No clear player prediction from temporal model. Returning 'Unknown'.")
         return "Unknown"

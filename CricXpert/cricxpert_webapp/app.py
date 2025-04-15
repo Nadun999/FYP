@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# Configure logging
+# configure logging
 logging.basicConfig(level=logging.DEBUG)
 
 UPLOAD_FOLDER = 'uploads'
@@ -49,7 +49,7 @@ def predict():
         file_path = os.path.join('/Users/nadunsenarathne/Downloads/Documents/IIT/4th Year/FYP/CricXpert/cricxpert_webapp/uploads', filename)
         file.save(file_path)
 
-        # Determine if the file is a video or an image
+        # determine if the file is a video or an image
         is_video = filename.lower().endswith(('.mp4', '.mov', '.avi'))
         logging.debug(f"File uploaded: {filename}, is_video: {is_video}")
 
