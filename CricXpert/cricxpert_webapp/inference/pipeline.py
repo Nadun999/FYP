@@ -672,7 +672,7 @@ def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face
         confidence = probabilities[predicted_class_index]
         print(f"Frame {i}: Detected person: {predicted_player} with confidence: {confidence:.2f}")
 
-        if confidence > 0.1:
+        if confidence >= 0.18:
             predictions.append(predicted_player)
         else:
             predictions.append("Unknown")
@@ -685,7 +685,7 @@ def predict_person(video_path, resnet_model, ensemble_model, label_encoder, face
             print(f"\nPredicted player based on spatial model: {most_common_prediction}")
             return most_common_prediction
 
-    print("No player detected from spatial model, moving to temporal model...")
+    print("\n No player detected from spatio-temporal model...")
 
 
     # Step 4: Temporal Model (Use pose landmarks and GRU-based model for gait analysis)

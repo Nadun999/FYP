@@ -1,7 +1,7 @@
 LANGFUSE_SECRET_KEY = "sk-lf-1b6737ff-b2f5-4468-a0ff-31a2f8c89592"
 LANGFUSE_PUBLIC_KEY = "pk-lf-5b8579d9-c0a0-4126-8fe1-c748668b8a77"
 LANGFUSE_HOST = "https://us.cloud.langfuse.com"
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = "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"
 DB_HOST = "localhost"
 DB_USER = "root"
 DB_PASSWORD = "Nadun@123"

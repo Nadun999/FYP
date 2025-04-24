@@ -16,7 +16,7 @@ langfuse_handler = CallbackHandler(
     host="https://us.cloud.langfuse.com", 
 )
 
-def parse_response(output, parser, llm=ChatOpenAI(model="gpt-4o", openai_api_key="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")):
+def parse_response(output, parser, llm=ChatOpenAI(model="gpt-4o", openai_api_key="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")):
     try:
         parsed = parser.parse(output)
     except OutputParserException:
