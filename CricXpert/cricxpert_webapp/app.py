@@ -27,7 +27,7 @@ label_encoder = joblib.load('saved_models/ResNet/ensemble_label_encoder.pkl')
 face_recognition_model = joblib.load('saved_models/Face_Recognition_Model/face_recognition_model.pkl')
 face_label_encoder = joblib.load('saved_models/Face_Recognition_Model/label_encoder.pkl')
 temporal_model = load_model('saved_models/GRU/temporal_model')
-llm = ChatOpenAI(model="gpt-4o", openai_api_key="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")
+llm = ChatOpenAI(model="gpt-4o", openai_api_key="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")
 
 print("Models loaded successfully.")
 
@@ -94,4 +94,4 @@ def generate_stat():
         return jsonify({"error": str(e)})
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True,port=5050)
